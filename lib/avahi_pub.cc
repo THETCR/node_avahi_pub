@@ -68,7 +68,7 @@ static void entry_group_callback(AvahiEntryGroup *g, AvahiEntryGroupState state,
     switch (state) {
         case AVAHI_ENTRY_GROUP_ESTABLISHED :
             /* The entry group has been established successfully */
-            fprintf(stderr, "Service '%s' successfully established.\n", userdata->name);
+//          fprintf(stderr, "Service '%s' successfully established.\n", userdata->name);
             break;
 
         case AVAHI_ENTRY_GROUP_COLLISION : {
@@ -122,7 +122,7 @@ static void create_services(AvahiClient *c, ServiceInfo * userdata) {
     /* If the group is empty (either because it was just created, or
      * because it was reset previously, add our entries.  */
     if (avahi_entry_group_is_empty(userdata->group)) {
-        fprintf(stderr, "Adding service '%s'\n", userdata->name);
+//      fprintf(stderr, "Adding service '%s'\n", userdata->name);
 
         /* Only services with the same name should be put in the same entry 
          * group. */
@@ -136,7 +136,7 @@ static void create_services(AvahiClient *c, ServiceInfo * userdata) {
             if (ret == AVAHI_ERR_COLLISION)
                 goto collision;
 
-            fprintf(stderr, "Failed to add _ipp._tcp service: %s\n", avahi_strerror(ret));
+            fprintf(stderr, "Failed to add %s service: %s\n", userdata->type, avahi_strerror(ret));
             goto fail;
         }
 
