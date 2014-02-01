@@ -13,7 +13,7 @@ module.exports =
                 }
 
 , isSupported : function() {
-                  return (require('os').platform() === 'linux')
+                  return (require('os').platform() === 'linux');
                 }
 
 , kill        : function() {

@@ -1,27 +1,21 @@
 {
-  "conditions": [
-    ["OS==\"linux\"",
-      {
-        "targets": [{
-          "target_name": "avahi_pub",
-          "sources": [ "lib/avahi_pub.cc" ],
-          "cflags":
-            [
-              "-fpermissive",
-            ],
-          "libraries":
-            [
-              "-lavahi-client",
-              "-lavahi-common"
-            ]
-          }]
-      },
-      {
-        "targets": [{
-          "target_name": "avahi_pub",
-          "sources": [ "lib/avahi_pub.cc" ]
+  'targets': [
+    {
+      'target_name': 'avahi_pub',
+      'conditions': [
+        ['OS=="linux"', {
+          'sources': [
+            'src/lib/avahi_pub.cc'
+          ],
+          'cflags': [
+            '-fpermissive',
+          ],
+          'libraries': [
+            '-lavahi-client',
+            '-lavahi-common'
+          ]
         }]
-      }
-    ]
+      ]
+    }
   ]
 }
