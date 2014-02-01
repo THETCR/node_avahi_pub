@@ -5,7 +5,7 @@
       'conditions': [
         ['OS=="linux"', {
           'sources': [
-            'src/lib/avahi_pub.cc'
+            'lib/avahi_pub.cc'
           ],
           'cflags': [
             '-fpermissive',
