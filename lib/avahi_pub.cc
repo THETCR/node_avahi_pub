@@ -268,16 +268,16 @@ using namespace v8;
 
 class NodeAvahiPubService : public node::ObjectWrap {
  public:
-  static void Init();
-  static v8::Handle<v8::Value> NewInstance(const v8::Arguments& args);
+  static void Init(v8::Isolate* isolate);
+  static void NewInstance(const v8::FunctionCallbackInfo<v8::Value>& args);
 
  private:
   NodeAvahiPubService();
   ~NodeAvahiPubService();
 
   static v8::Persistent<v8::Function> constructor;
-  static v8::Handle<v8::Value> New(const v8::Arguments& args);
-  static v8::Handle<v8::Value> Remove(const v8::Arguments& args);
+  static void New(const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void Remove(const v8::FunctionCallbackInfo<v8::Value>& args);
   struct ServiceInfo * serviceInfo_;
 };
 
@@ -289,47 +289,36 @@ NodeAvahiPubService::~NodeAvahiPubService() {};
 
 Persistent<Function> NodeAvahiPubService::constructor;
 
-void NodeAvahiPubService::Init() {
+void NodeAvahiPubService::Init(Isolate* isolate) {
   // Prepare constructor template
-  Local<FunctionTemplate> tpl = FunctionTemplate::New(New);
-  tpl->SetClassName(String::NewSymbol("NodeAvahiPubService"));
+  Local<FunctionTemplate> tpl = FunctionTemplate::New(isolate, New);
+  tpl->SetClassName(String::NewFromUtf8(isolate, "NodeAvahiPubService"));
   tpl->InstanceTemplate()->SetInternalFieldCount(1);
+
   // Prototype
-  tpl->PrototypeTemplate()->Set(String::NewSymbol("remove"),
-      FunctionTemplate::New(Remove)->GetFunction());
+  NODE_SET_PROTOTYPE_METHOD(tpl, "remove", Remove);
 
-  constructor = Persistent<Function>::New(tpl->GetFunction());
+  constructor.Reset(isolate, tpl->GetFunction());
 }
 
-Handle<Value> NodeAvahiPubService::NewInstance(const Arguments& args) {
-  HandleScope scope;
-
-  const unsigned argc = 1;
-  Handle<Value> argv[argc] = { args[0] };
-
-  Local<Object> instance = constructor->NewInstance(argc, argv);
-
-  return scope.Close(instance);
-}
-
-Handle<Value> NodeAvahiPubService::New(const Arguments& args) {
-  HandleScope scope;
+void NodeAvahiPubService::New(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  Isolate* isolate = Isolate::GetCurrent();
   Local<Object> opts = args[0]->ToObject();
   v8::String::Utf8Value * name = new v8::String::Utf8Value(
-    v8::Handle<v8::String>::Cast( opts->Get(String::NewSymbol("name")) )
+    v8::Handle<v8::String>::Cast( opts->Get(String::NewFromUtf8(isolate, "name")) )
   );
   v8::String::Utf8Value * type = new v8::String::Utf8Value(
-    v8::Handle<v8::String>::Cast( opts->Get(String::NewSymbol("type")) )
+    v8::Handle<v8::String>::Cast( opts->Get(String::NewFromUtf8(isolate, "type")) )
   );
   v8::String::Utf8Value * data = new v8::String::Utf8Value(
-    v8::Handle<v8::String>::Cast( opts->Get(String::NewSymbol("data")) )
+    v8::Handle<v8::String>::Cast( opts->Get(String::NewFromUtf8(isolate, "data")) )
   );
   int port =
-    v8::Handle<v8::Integer>::Cast( opts->Get(String::NewSymbol("port")) )->Value();
+    v8::Handle<v8::Integer>::Cast( opts->Get(String::NewFromUtf8(isolate, "port")) )->Value();
 
   NodeAvahiPubService* obj = new NodeAvahiPubService();
 
-  struct ServiceInfo * serviceInfo = malloc(sizeof(ServiceInfo));
+  struct ServiceInfo * serviceInfo = (struct ServiceInfo *) malloc(sizeof(ServiceInfo));
 
   serviceInfo->name = *(*name);
   serviceInfo->type = *(*type);
@@ -342,16 +331,28 @@ Handle<Value> NodeAvahiPubService::New(const Arguments& args) {
   obj->serviceInfo_ = serviceInfo;
   obj->Wrap(args.This());
 
-  return scope.Close(args.This());
+  args.GetReturnValue().Set(args.This());
 }
 
-Handle<Value> NodeAvahiPubService::Remove(const Arguments& args) {
-  HandleScope scope;
+void NodeAvahiPubService::NewInstance(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  Isolate* isolate = Isolate::GetCurrent();
 
-  NodeAvahiPubService* obj = ObjectWrap::Unwrap<NodeAvahiPubService>(args.This());
+  const unsigned argc = 1;
+  Handle<Value> argv[argc] = { args[0] };
+
+  Local<Function> cons = Local<Function>::New(isolate, constructor);
+  Local<Context> context = isolate->GetCurrentContext();
+  Local<Object> instance =
+      cons->NewInstance(context, argc, argv).ToLocalChecked();
+
+  args.GetReturnValue().Set(instance);
+}
+
+void NodeAvahiPubService::Remove(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  NodeAvahiPubService* obj = ObjectWrap::Unwrap<NodeAvahiPubService>(args.Holder());
   node_avahi_pub_remove( obj->serviceInfo_ );
 
-  return scope.Close(args.This());
+  args.GetReturnValue().Set(args.This());
 }
 
 #else
@@ -360,42 +361,35 @@ using namespace v8;
 
 
 
-
-Handle<Value> Publish(const Arguments& args) {
-  HandleScope scope;
+void Publish(const FunctionCallbackInfo<Value>& args) {
   #if __linux
-    return scope.Close(NodeAvahiPubService::NewInstance(args));
+	NodeAvahiPubService::NewInstance(args);
   #else
-    return scope.Close(Undefined());
+	args.GetReturnValue().SetUndefined();
   #endif
 }
 
-Handle<Value> Init(const Arguments& args) {
-  HandleScope scope;
+void Init(const FunctionCallbackInfo<Value>& args) {
   #if __linux
     node_avahi_pub_init();
   #endif
-  return scope.Close(Undefined());
+  args.GetReturnValue().SetUndefined();
 }
 
-Handle<Value> Poll(const Arguments& args) {
-  HandleScope scope;
+void Poll(const FunctionCallbackInfo<Value>& args) {
   #if __linux
     node_avahi_pub_poll();
   #endif
-  return scope.Close(Undefined());
+  args.GetReturnValue().SetUndefined();
 }
 
-void init(Handle<Object> exports) {
+void InitAll(Local<Object> exports, Local<Object> module) {
   #if __linux
-    NodeAvahiPubService::Init();
+    NodeAvahiPubService::Init(exports->GetIsolate());
   #endif
-  exports->Set(String::NewSymbol("publish"),
-      FunctionTemplate::New(Publish)->GetFunction());
-  exports->Set(String::NewSymbol("poll"),
-      FunctionTemplate::New(Poll)->GetFunction());
-  exports->Set(String::NewSymbol("init"),
-      FunctionTemplate::New(Init)->GetFunction());
+  NODE_SET_METHOD(exports, "publish", Publish);
+  NODE_SET_METHOD(exports, "init",    Init);
+  NODE_SET_METHOD(exports, "poll",    Poll);
 }
 
-NODE_MODULE(avahi_pub, init)
+NODE_MODULE(avahi_pub, InitAll)
