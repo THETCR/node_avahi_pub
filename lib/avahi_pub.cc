@@ -59,7 +59,8 @@ struct ServiceInfo {
 static void create_services(AvahiClient *c, ServiceInfo * userdata);
 static void node_avahi_pub_poll();
 
-static void entry_group_callback(AvahiEntryGroup *g, AvahiEntryGroupState state, AVAHI_GCC_UNUSED ServiceInfo *userdata) {
+static void entry_group_callback(AvahiEntryGroup *g, AvahiEntryGroupState state, void* _userdata) {
+	ServiceInfo *userdata = (ServiceInfo*)_userdata;
 
     if ( !(g == userdata->group || userdata->group == NULL) ) return;
     userdata->group = g;
@@ -130,7 +131,7 @@ static void create_services(AvahiClient *c, ServiceInfo * userdata) {
 
         /* Add the service */
         ret = avahi_entry_group_add_service(
-          userdata->group, AVAHI_IF_UNSPEC, AVAHI_PROTO_UNSPEC, 0, userdata->name, userdata->type,
+          userdata->group, AVAHI_IF_UNSPEC, AVAHI_PROTO_UNSPEC, AVAHI_PUBLISH_UNIQUE, userdata->name, userdata->type,
           NULL, NULL, userdata->port, userdata->data, NULL
         );
         if (ret < 0) {
@@ -170,7 +171,8 @@ fail:
     avahi_simple_poll_quit(simple_poll);
 }
 
-static void client_callback(AvahiClient *c, AvahiClientState state, AVAHI_GCC_UNUSED ServiceInfo * userdata) {
+static void client_callback(AvahiClient *c, AvahiClientState state, void* _userdata) {
+	ServiceInfo *userdata = (ServiceInfo*)_userdata;
     assert(c);
 
     /* Called whenever the client or server state changes */
@@ -213,16 +215,16 @@ static void client_callback(AvahiClient *c, AvahiClientState state, AVAHI_GCC_UN
     }
 }
 
-void node_avahi_pub_publish(struct ServiceInfo* serviceInfo) {
+int node_avahi_pub_publish(struct ServiceInfo* serviceInfo) {
 
     AvahiClient *client = NULL;
     int error;
-    int ret = 1;
-    struct timeval tv;
-    int i;
+//    int ret = 1;
+//    struct timeval tv;
+//    int i;
 
     /* Allocate a new client */
-    client = avahi_client_new(avahi_simple_poll_get(simple_poll), 0, client_callback, serviceInfo, &error);
+    client = avahi_client_new(avahi_simple_poll_get(simple_poll), AVAHI_CLIENT_IGNORE_USER_CONFIG, client_callback, (void*)serviceInfo, &error);
     serviceInfo->client = client;
 
     /* Check wether creating the client object succeeded */
