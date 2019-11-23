@@ -9,7 +9,7 @@
 # sudo apt-get update
 # sudo apt-get install nodejs
 # sudo npm install -g node-gyp
-# sudo npm install -g coffee-script
+# sudo npm install -g coffeescript
 
 # rm ./build/Release/avahi_pub.node; node-gyp configure build && coffee ./example.coffee
 

@@ -15,7 +15,8 @@
             '-lavahi-common'
           ]
         }]
-      ]
+      ],
+      "include_dirs": [ "<!(node -e \"require('nan')\")" ]
     }
   ]
 }
